@@ -1,0 +1,264 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "variables": {
+    "resourcesApiVersion": "2016-09-01"
+  },
+  "parameters": {
+    "standard": {
+      "type": "secureObject",
+      "defaultValue": {
+        "infrastructure": {
+          "sqlServerFqdn": null
+        },
+        "deploymentId": null,
+        "location": null
+      }
+    },
+    "extension": {
+      "type": "secureObject",
+      "defaultValue": {
+        "templateLinkAccessToken": null,
+        "psMsDeployPackageUrl": null,
+        "cmPsModuleMsDeployPackageUrl": null,
+        "cdPsModuleMsDeployPackageUrl": null
+      }
+    },
+    "templateLinkBase": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[uri(replace(json(string(deployment().properties.templateLink)).uri,' ','%20'), '.')]"
+    },
+    "templateLinkAccessToken": {
+      "type": "securestring",
+      "defaultValue": "[parameters('extension').templateLinkAccessToken]"
+    },
+    "deploymentId": {
+      "type": "string",
+      "defaultValue": "[coalesce(parameters('standard').deploymentId, resourceGroup().name)]"
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[coalesce(parameters('standard').location, resourceGroup().location)]"
+    },
+    "sqlServerFqdn": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[coalesce(parameters('standard').infrastructure.sqlServerFqdn, concat(parameters('deploymentId'), '-sql.database.windows.net'))]"
+    },
+    "sqlServerLogin": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[parameters('standard').sqlServerLogin]"
+    },
+    "sqlServerPassword": {
+      "type": "securestring",
+      "minLength": 8,
+      "defaultValue": "[parameters('standard').sqlServerPassword]"
+    },
+    "coreSqlDatabaseName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[coalesce(parameters('standard').coreSqlDatabaseName, concat(parameters('deploymentId'), '-core-db'))]"
+    },
+    "masterSqlDatabaseName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[coalesce(parameters('standard').masterSqlDatabaseName, concat(parameters('deploymentId'), '-master-db'))]"
+    },
+    "webSqlDatabaseName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[coalesce(parameters('standard').webSqlDatabaseName, concat(parameters('deploymentId'), '-web-db'))]"
+    },
+    "applicationInsightsName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[coalesce(parameters('standard').applicationInsightsName, concat(parameters('deploymentId'), '-ai'))]"
+    },
+    "cmWebAppName": {
+      "type": "string",
+      "defaultValue": "[concat(parameters('deploymentId'), '-cm')]"
+    },
+    "cdWebAppName": {
+      "type": "string",
+      "defaultValue": "[concat(parameters('deploymentId'), '-cd')]"
+    },
+    "psHostingPlanName": {
+      "type": "string",
+      "defaultValue": "[concat(parameters('deploymentId'), '-ps-hp')]"
+    },
+    "psWebAppName": {
+      "type": "string",
+      "defaultValue": "[concat(parameters('deploymentId'), '-ps')]"
+    },
+    "psWebAppHostName": {
+      "type": "string",
+      "defaultValue": "[concat('https://', parameters('deploymentId'), '-ps.azurewebsites.net')]"
+    },
+    "psHostingPlanSkuName": {
+      "type": "string",
+      "defaultValue": "B3"
+    },
+    "psHostingPlanSkuCapacity": {
+      "type": "int",
+      "defaultValue": 1
+    },
+    "psMsDeployPackageUrl": {
+      "type": "securestring",
+      "minLength": 1,
+      "defaultValue": "[parameters('extension').psMsDeployPackageUrl]"
+    },
+    "cmPsModuleMsDeployPackageUrl": {
+      "type": "securestring",
+      "minLength": 1,
+      "defaultValue": "[parameters('extension').cmPsModuleMsDeployPackageUrl]"
+    },
+    "cdPsModuleMsDeployPackageUrl": {
+      "type": "securestring",
+      "minLength": 1,
+      "defaultValue": "[parameters('extension').cdPsModuleMsDeployPackageUrl]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat(parameters('deploymentId'), '-ps-infrastructure')]",
+      "apiVersion": "[variables('resourcesApiVersion')]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(uri(parameters('templateLinkBase'), 'nested/infrastructure.json'), parameters('templateLinkAccessToken'))]"
+        },
+        "parameters": {
+          "deploymentId": {
+            "value": "[parameters('deploymentId')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "psHostingPlanName": {
+            "value": "[parameters('psHostingPlanName')]"
+          },
+          "psWebAppName": {
+            "value": "[parameters('psWebAppName')]"
+          },
+          "psHostingPlanSkuName": {
+            "value": "[parameters('psHostingPlanSkuName')]"
+          },
+          "psHostingPlanSkuCapacity": {
+            "value": "[parameters('psHostingPlanSkuCapacity')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat(parameters('deploymentId'), '-ps-application')]",
+      "apiVersion": "[variables('resourcesApiVersion')]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(uri(parameters('templateLinkBase'), 'nested/application.json'), parameters('templateLinkAccessToken'))]"
+        },
+        "parameters": {
+          "infrastructure": {
+            "value": "[parameters('standard').infrastructure]"
+          },
+          "deploymentId": {
+            "value": "[parameters('deploymentId')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "sqlServerFqdn": {
+            "value": "[parameters('sqlServerFqdn')]"
+          },
+          "sqlServerLogin": {
+            "value": "[parameters('sqlServerLogin')]"
+          },
+          "sqlServerPassword": {
+            "value": "[parameters('sqlServerPassword')]"
+          },
+          "coreSqlDatabaseName": {
+            "value": "[parameters('coreSqlDatabaseName')]"
+          },
+          "masterSqlDatabaseName": {
+            "value": "[parameters('masterSqlDatabaseName')]"
+          },
+          "webSqlDatabaseName": {
+            "value": "[parameters('webSqlDatabaseName')]"
+          },
+          "applicationInsightsName": {
+            "value": "[parameters('applicationInsightsName')]"
+          },
+          "psWebAppName": {
+            "value": "[parameters('psWebAppName')]"
+          },
+          "psMsDeployPackageUrl": {
+            "value": "[parameters('psMsDeployPackageUrl')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', concat(parameters('deploymentId'), '-ps-infrastructure'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat(parameters('deploymentId'), '-ps-module')]",
+      "apiVersion": "[variables('resourcesApiVersion')]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(uri(parameters('templateLinkBase'), 'nested/module.json'), parameters('templateLinkAccessToken'))]"
+        },
+        "parameters": {
+          "infrastructure": {
+            "value": "[parameters('standard').infrastructure]"
+          },
+          "deploymentId": {
+            "value": "[parameters('deploymentId')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "sqlServerFqdn": {
+            "value": "[parameters('sqlServerFqdn')]"
+          },
+          "sqlServerLogin": {
+            "value": "[parameters('sqlServerLogin')]"
+          },
+          "sqlServerPassword": {
+            "value": "[parameters('sqlServerPassword')]"
+          },
+          "masterSqlDatabaseName": {
+            "value": "[parameters('masterSqlDatabaseName')]"
+          },
+          "coreSqlDatabaseName": {
+            "value": "[parameters('coreSqlDatabaseName')]"
+          },
+          "cmWebAppName": {
+            "value": "[parameters('cmWebAppName')]"
+          },
+          "cdWebAppName": {
+            "value": "[parameters('cdWebAppName')]"
+          },
+          "psWebAppHostName": {
+            "value": "[parameters('psWebAppHostName')]"
+          },
+          "cmPsModuleMsDeployPackageUrl": {
+            "value": "[parameters('cmPsModuleMsDeployPackageUrl')]"
+          },
+          "cdPsModuleMsDeployPackageUrl": {
+            "value": "[parameters('cdPsModuleMsDeployPackageUrl')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', concat(parameters('deploymentId'), '-ps-application'))]"
+      ]
+    }
+  ]
+}

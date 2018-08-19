@@ -1,0 +1,89 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "variables": {
+    "webApiVersion": "2016-08-01",
+    "serverFarmApiVersion": "2016-09-01",
+    "psHostingPlanNameTidy": "[toLower(trim(parameters('psHostingPlanName')))]",
+    "psWebAppNameTidy": "[toLower(trim(parameters('psWebAppName')))]",
+    "sitecoreTags": {
+      "provider": "b51535c2-ab3e-4a68-95f8-e2e3c9a19299",
+      "ps": "ps"
+    }
+  },
+  "parameters": {
+    "deploymentId": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]"
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "psHostingPlanName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-ps-hp')]"
+    },
+    "psWebAppName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-ps')]"
+    },
+    "psHostingPlanSkuName": {
+      "type": "string",
+      "defaultValue": "B3"
+    },
+    "psHostingPlanSkuCapacity": {
+      "type": "int",
+      "defaultValue": 1
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "name": "[variables('psHostingPlanNameTidy')]",
+      "apiVersion": "[variables('serverFarmApiVersion')]",
+      "sku": {
+        "name": "[parameters('psHostingPlanSkuName')]",
+        "capacity": "[parameters('psHostingPlanSkuCapacity')]"
+      },
+      "properties": {
+        "name": "[variables('psHostingPlanNameTidy')]"
+      },
+      "location": "[parameters('location')]",
+      "tags": {
+        "provider": "[variables('sitecoreTags').provider]",
+        "logicalName": "[variables('sitecoreTags').ps]"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "name": "[variables('psWebAppNameTidy')]",
+      "apiVersion": "[variables('webApiVersion')]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('psHostingPlanNameTidy'))]",
+        "siteConfig": {
+          "use32BitWorkerProcess": false,
+          "alwaysOn": true,
+          "phpVersion": "",
+          "defaultDocuments": [
+            "index.html"
+          ],
+          "http20Enabled": true,
+          "ftpsState": "FtpsOnly"
+        },
+        "clientAffinityEnabled": false
+      },
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('psHostingPlanNameTidy'))]"
+      ],
+      "tags": {
+        "provider": "[variables('sitecoreTags').provider]",
+        "logicalName": "[variables('sitecoreTags').ps]"
+      }
+    }
+  ]
+}

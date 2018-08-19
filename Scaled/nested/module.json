@@ -1,0 +1,122 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "variables": {
+    "webApiVersion": "2016-08-01",
+    "cmWebAppNameTidy": "[toLower(trim(parameters('cmWebAppName')))]",
+    "cdWebAppNameTidy": "[toLower(trim(parameters('cdWebAppName')))]",
+    "psWebAppHostNameTidy": "[toLower(trim(parameters('psWebAppHostName')))]",
+    "sqlServerFqdnTidy": "[toLower(trim(parameters('sqlServerFqdn')))]",
+    "masterSqlDatabaseNameTidy": "[toLower(trim(parameters('masterSqlDatabaseName')))]",
+    "masterSqlDatabaseConnectionString": "[concat('Encrypt=True;TrustServerCertificate=False;Data Source=', variables('sqlServerFqdnTidy'), ',1433;Initial Catalog=',variables('masterSqlDatabaseNameTidy'),';User Id=', parameters('sqlServerLogin'), ';Password=', parameters('sqlServerPassword'), ';')]",
+    "coreSqlDatabaseNameTidy": "[toLower(trim(parameters('coreSqlDatabaseName')))]",
+    "coreSqlDatabaseConnectionString": "[concat('Encrypt=True;TrustServerCertificate=False;Data Source=', variables('sqlServerFqdnTidy'), ',1433;Initial Catalog=',variables('coreSqlDatabaseNameTidy'),';User Id=', parameters('sqlServerLogin'), ';Password=', parameters('sqlServerPassword'), ';')]"
+  },
+  "parameters": {
+    "infrastructure": {
+      "type": "secureObject",
+      "defaultValue": {
+        "sqlServerFqdn": null
+      }
+    },
+    "deploymentId": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]"
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "sqlServerFqdn": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[parameters('infrastructure').sqlServerFqdn]"
+    },
+    "sqlServerLogin": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sqlServerPassword": {
+      "type": "securestring",
+      "minLength": 8
+    },
+    "masterSqlDatabaseName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-master-db')]"
+    },
+    "coreSqlDatabaseName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-core-db')]"
+    },
+    "cmWebAppName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-cm')]"
+    },
+    "cdWebAppName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-cd')]"
+    },
+    "psWebAppHostName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat('https://', parameters('deploymentId'), '-ps.azurewebsites.net')]"
+    },
+    "cmPsModuleMsDeployPackageUrl": {
+      "type": "securestring",
+      "minLength": 1,
+      "defaultValue": "[parameters('cmPsModuleMsDeployPackageUrl')]"
+    },
+    "cdPsModuleMsDeployPackageUrl": {
+      "type": "securestring",
+      "minLength": 1,
+      "defaultValue": "[parameters('cdPsModuleMsDeployPackageUrl')]"
+    }
+  },
+  "resources": [
+    {
+      "name": "[concat(variables('cmWebAppNameTidy'), '/', 'MSDeploy')]",
+      "type": "Microsoft.Web/sites/extensions",
+      "location": "[parameters('location')]",
+      "apiVersion": "[variables('webApiVersion')]",
+      "properties": {
+        "mode": "Incremental",
+        "addOnPackages": [
+           {
+            "packageUri": "[parameters('cmPsModuleMsDeployPackageUrl')]",
+            "dbType": "SQL",
+            "connectionString": "[variables('masterSqlDatabaseConnectionString')]",
+            "setParameters": {
+              "Application Path": "[variables('cmWebAppNameTidy')]",
+              "Core Admin Connection String": "[variables('coreSqlDatabaseConnectionString')]",
+              "Publishing Service URL": "[variables('psWebAppHostNameTidy')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[concat(variables('cdWebAppNameTidy'), '/', 'MSDeploy')]",
+      "type": "Microsoft.Web/sites/extensions",
+      "location": "[parameters('location')]",
+      "apiVersion": "[variables('webApiVersion')]",
+      "properties": {
+        "mode": "Incremental",
+        "addOnPackages": [
+           {
+            "packageUri": "[parameters('cdPsModuleMsDeployPackageUrl')]",
+            "setParameters": {
+              "Application Path": "[variables('cdWebAppNameTidy')]",
+              "Core Admin Connection String": "",
+              "Publishing Service URL": ""
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

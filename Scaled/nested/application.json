@@ -1,0 +1,102 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "variables": {
+    "webApiVersion": "2016-08-01",
+    "applicationInsightsApiVersion": "2015-05-01",
+    "psWebAppNameTidy": "[toLower(trim(parameters('psWebAppName')))]",
+    "sqlServerFqdnTidy": "[toLower(trim(parameters('sqlServerFqdn')))]",
+    "coreSqlDatabaseNameTidy": "[toLower(trim(parameters('coreSqlDatabaseName')))]",
+    "masterSqlDatabaseNameTidy": "[toLower(trim(parameters('masterSqlDatabaseName')))]",
+    "webSqlDatabaseNameTidy": "[toLower(trim(parameters('webSqlDatabaseName')))]",
+    "masterSqlDatabaseConnectionString": "[concat('Encrypt=True;TrustServerCertificate=False;Data Source=', variables('sqlServerFqdnTidy'), ',1433;Initial Catalog=',variables('masterSqlDatabaseNameTidy'),';User Id=', parameters('sqlServerLogin'), ';Password=', parameters('sqlServerPassword'), ';MultipleActiveResultSets=True;')]",
+    "coreSqlDatabaseConnectionString": "[concat('Encrypt=True;TrustServerCertificate=False;Data Source=', variables('sqlServerFqdnTidy'), ',1433;Initial Catalog=',variables('coreSqlDatabaseNameTidy'),';User Id=', parameters('sqlServerLogin'), ';Password=', parameters('sqlServerPassword'), ';MultipleActiveResultSets=True;')]",
+    "webSqlDatabaseConnectionString": "[concat('Encrypt=True;TrustServerCertificate=False;Data Source=', variables('sqlServerFqdnTidy'), ',1433;Initial Catalog=',variables('webSqlDatabaseNameTidy'),';User Id=', parameters('sqlServerLogin'), ';Password=', parameters('sqlServerPassword'), ';MultipleActiveResultSets=True;')]",
+    "applicationInsightsNameTidy": "[toLower(trim(parameters('applicationInsightsName')))]"
+  },
+  "parameters": {
+    "infrastructure": {
+      "type": "secureObject",
+      "defaultValue": {
+        "sqlServerFqdn": null
+      }
+    },
+    "deploymentId": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]"
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "sqlServerFqdn": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[parameters('infrastructure').sqlServerFqdn]"
+    },
+    "sqlServerLogin": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sqlServerPassword": {
+      "type": "securestring",
+      "minLength": 8
+    },
+    "coreSqlDatabaseName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-core-db')]"
+    },
+    "masterSqlDatabaseName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-master-db')]"
+    },
+    "webSqlDatabaseName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-web-db')]"
+    },
+    "applicationInsightsName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-ai')]"
+    },
+    "psWebAppName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-ps')]"
+    },
+    "psMsDeployPackageUrl": {
+      "type": "securestring",
+      "minLength": 1,
+      "defaultValue": "[parameters('psMsDeployPackageUrl')]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/sites/extensions",
+      "name": "[concat(variables('psWebAppNameTidy'), '/', 'MSDeploy')]",
+      "apiVersion": "[variables('webApiVersion')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "mode": "Incremental",
+        "addOnPackages": [
+          {
+            "packageUri": "[parameters('psMsDeployPackageUrl')]",
+            "dbType": "SQL",
+            "connectionString": "[variables('masterSqlDatabaseConnectionString')]",
+            "setParameters": {
+              "Application Path": "[variables('psWebAppNameTidy')]",
+              "Core Admin Connection String": "[variables('coreSqlDatabaseConnectionString')]",
+              "Master Admin Connection String": "[variables('masterSqlDatabaseConnectionString')]",
+              "Web Admin Connection String": "[variables('webSqlDatabaseConnectionString')]",
+              "Application Insights Instrumentation Key": "[reference(resourceId('Microsoft.Insights/Components', variables('applicationInsightsNameTidy')), variables('applicationInsightsApiVersion')).InstrumentationKey]"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
