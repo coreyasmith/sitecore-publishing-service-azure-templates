@@ -1,6 +1,6 @@
 # Sitecore Publishing Service Azure Templates
 
-This repository contains Azure Resource Manager templates to install the [Sitecore Publishing Service][1] in your Sitecore Azure PaaS environment.
+This repository contains Azure Resource Manager templates to install the [Sitecore Publishing Service][1] in your Sitecore Azure PaaS environment and scripts to create the necessary Web Deployment Packages.
 
 ## ⚠️Warning⚠️
 
