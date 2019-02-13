@@ -19,7 +19,7 @@ if(!(Test-Path $Destination)) {
 $destinationPath = (Resolve-Path $Destination).Path
 
 $sourcePackage = Copy-Item -Path $sourcePath -Destination $destinationPath -PassThru
-$unzippedPath = "$destinationPath\$($sourcePackage.BaseName)"
+$unzippedPath = [IO.Path]::Combine($destinationPath, $sourcePackage.BaseName)
 if (Test-Path $unzippedPath) {
     Remove-Item -Recurse -Force $unzippedPath
 }
@@ -47,7 +47,7 @@ $connectionStringsFile = "config\global\sc.connectionstrings.xml"
 "</Settings>"
 $connectionStrings.Save("$unzippedPath\$connectionStringsFile")
 
-$manifestFile = "$destinationPath\manifest.xml"
+$manifestFile = [IO.Path]::Combine($destinationPath, "manifest.xml")
 [xml]$manifestXml = `
 "<sitemanifest>" +
   "<contentPath path=`"$($unzippedPath)`" />" +
@@ -55,7 +55,7 @@ $manifestFile = "$destinationPath\manifest.xml"
 "</sitemanifest>"
 $manifestXml.Save($manifestFile)
 
-$parametersFile = "$destinationPath\parameters.xml"
+$parametersFile = [IO.Path]::Combine($destinationPath, "parameters.xml")
 [xml]$parametersXml = `
 "<parameters>" +
   "<parameter tags=`"contentPath`" defaultValue=`"Default Web Site/Content`" description=`"Full site path where you would like to install your application (i.e., Default Web Site/Content)`" name=`"Application Path`">" +
@@ -76,7 +76,7 @@ $parametersFile = "$destinationPath\parameters.xml"
 "</parameters>"
 $parametersXml.Save($parametersFile)
 
-$outputFile = "$($destinationPath)\$($sourcePackage.BaseName).wdp.zip"
+$outputFile = [IO.Path]::Combine($destinationPath, "$($sourcePackage.BaseName).wdp.zip")
 $msDeploy = ([IO.Path]::Combine($env:ProgramFiles, 'IIS', 'Microsoft Web Deploy V3', 'msdeploy.exe'))
 $packageCommand = "& '$msDeploy' --%" +
     " -verb:sync" +
