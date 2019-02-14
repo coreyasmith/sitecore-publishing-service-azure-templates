@@ -77,7 +77,7 @@ $parametersFile = [IO.Path]::Combine($destinationPath, "parameters.xml")
 $parametersXml.Save($parametersFile)
 
 $outputFile = [IO.Path]::Combine($destinationPath, "$($sourcePackage.BaseName).wdp.zip")
-$msDeploy = ([IO.Path]::Combine($env:ProgramFiles, 'IIS', 'Microsoft Web Deploy V3', 'msdeploy.exe'))
+$msDeploy = [IO.Path]::Combine($env:ProgramFiles, 'IIS', 'Microsoft Web Deploy V3', 'msdeploy.exe')
 $packageCommand = "& '$msDeploy' --%" +
     " -verb:sync" +
     " -source:manifest='$manifestFile'" +
