@@ -111,8 +111,8 @@
             "packageUri": "[parameters('cdPsModuleMsDeployPackageUrl')]",
             "setParameters": {
               "Application Path": "[variables('cdWebAppNameTidy')]",
-              "Core Admin Connection String": "",
-              "Publishing Service URL": ""
+              "Core Admin Connection String": "[variables('coreSqlDatabaseConnectionString')]",
+              "Publishing Service URL": "[variables('psWebAppHostNameTidy')]"
             }
           }
         ]
