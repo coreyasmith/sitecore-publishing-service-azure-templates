@@ -34,7 +34,7 @@ try {
     $publishingServiceConfig = "Sitecore.Publishing.Service.config"
     [xml]$publishingParameter = `
     "<parameter name=`"Publishing Service URL`" description=`"URL to the Publishing Service Site`" tags=`"Hidden,NoStore`">" +
-      "<parameterEntry kind=`"XmlFile`" scope=`"$([Regex]::Escape($publishingServiceConfig))`" match=`"/configuration/sitecore/settings/setting[@name='PublishingServiceUrlRoot']/text()`" />" +
+      "<parameterEntry kind=`"XmlFile`" scope=`"$([Regex]::Escape($publishingServiceConfig))`" match=`"/configuration/sitecore/settings/setting[@name='PublishingService.UrlRoot']/@value`" />" +
     "</parameter>"
 
     $zip = [Ionic.Zip.ZipFile]::new($scWdpPath)
